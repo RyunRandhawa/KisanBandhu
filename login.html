@@ -282,6 +282,24 @@
         display: block;
     }
 
+    /* Guest form toggle */
+    .guest-form {
+        display: none;
+    }
+
+    .guest-form.active {
+        display: block;
+    }
+
+    /* Guest form toggle */
+    .guest-form {
+        display: none;
+    }
+
+    .guest-form.active {
+        display: block;
+    }
+
     /* Responsive */
     @media (max-width: 600px) {
         .login-card {
@@ -330,10 +348,11 @@
         </div>
         {% endif %}
 
-        <!-- Tabs: Login / Register -->
+        <!-- Tabs: Login / Register / Guest -->
         <div class="form-tabs">
             <div class="form-tab active" id="loginTab" onclick="showLogin()">Login</div>
             <div class="form-tab" id="registerTab" onclick="showRegister()">Register</div>
+            <div class="form-tab" id="guestTab" onclick="showGuest()">Guest</div>
         </div>
 
         <!-- LOGIN FORM -->
@@ -373,14 +392,6 @@
 
             <div class="form-group">
                 <label class="form-label">
-                    <i data-feather="map-pin" style="width: 18px; height: 18px;"></i>
-                    Your Location (City/Village)
-                </label>
-                <input type="text" name="location" class="form-control" placeholder="e.g., Amritsar, Punjab">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">
                     <i data-feather="globe" style="width: 18px; height: 18px;"></i>
                     Preferred Language
                 </label>
@@ -396,6 +407,22 @@
                 Get Started
             </button>
         </form>
+
+        <!-- GUEST FORM -->
+        <form method="POST" action="{{ url_for('guest_login') }}" id="guestForm" class="guest-form">
+            <div class="form-group">
+                <label class="form-label">
+                    <i data-feather="smile" style="width: 18px; height: 18px;"></i>
+                    Welcome Guest!
+                </label>
+                <p class="form-helper">You can access limited features as a guest.</p>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <i data-feather="log-in" style="width: 22px; height: 22px;"></i>
+                Continue as Guest
+            </button>
+        </form>
     </div>
 </div>
 {% endblock %}
@@ -405,15 +432,28 @@
     function showLogin() {
         document.getElementById('loginForm').style.display = 'block';
         document.getElementById('registerForm').classList.remove('active');
+        document.getElementById('guestForm').classList.remove('active');
         document.getElementById('loginTab').classList.add('active');
         document.getElementById('registerTab').classList.remove('active');
+        document.getElementById('guestTab').classList.remove('active');
     }
 
     function showRegister() {
         document.getElementById('loginForm').style.display = 'none';
         document.getElementById('registerForm').classList.add('active');
+        document.getElementById('guestForm').classList.remove('active');
         document.getElementById('loginTab').classList.remove('active');
         document.getElementById('registerTab').classList.add('active');
+        document.getElementById('guestTab').classList.remove('active');
+    }
+
+    function showGuest() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('registerForm').classList.remove('active');
+        document.getElementById('guestForm').classList.add('active');
+        document.getElementById('loginTab').classList.remove('active');
+        document.getElementById('registerTab').classList.remove('active');
+        document.getElementById('guestTab').classList.add('active');
     }
 
     // Auto-switch tab based on error context
@@ -421,6 +461,8 @@
     showRegister();
     {% elif show_login %}
     showLogin();
+    {% elif show_guest %}
+    showGuest();
     {% endif %}
 </script>
 {% endblock %}
