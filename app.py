@@ -99,7 +99,7 @@ def login_required(f):
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
+        if 'user_id' not in session and 'guest_user' not in session:
             return redirect(url_for('login'))
         return f(*args, **kwargs)
 
@@ -156,6 +156,16 @@ def login():
 
     return render_template('login.html')
 
+
+@app.route('/guest_login', methods=['GET', 'POST'])
+def guest_login():
+    if request.method == 'POST':
+        session['guest_user'] = True
+        return redirect(url_for('dashboard'))
+
+    return render_template('guest_login.html')
+
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -169,24 +179,24 @@ def dashboard():
     # Get recent activities
     recent_data = {
         'chats': conn.execute('SELECT * FROM chat_history WHERE user_id = ? ORDER BY timestamp DESC LIMIT 5',
-                              (session['user_id'],)).fetchall(),
+                              (session.get('user_id', None),)).fetchall(),
         'analyses': conn.execute('SELECT * FROM analysis_history WHERE user_id = ? ORDER BY timestamp DESC LIMIT 5',
-                                 (session['user_id'],)).fetchall(),
+                                 (session.get('user_id', None),)).fetchall(),
         'soil': conn.execute('SELECT * FROM soil_history WHERE user_id = ? ORDER BY timestamp DESC LIMIT 3',
-                             (session['user_id'],)).fetchall(),
+                             (session.get('user_id', None),)).fetchall(),
         'alerts': conn.execute('SELECT * FROM weather_alerts WHERE user_id = ? ORDER BY timestamp DESC LIMIT 5',
-                               (session['user_id'],)).fetchall()
+                               (session.get('user_id', None),)).fetchall()
     }
     conn.close()
 
-    return render_template('dashboard.html', user_name=session['user_name'], **recent_data)
+    return render_template('dashboard.html', user_name=session.get('user_name', 'Guest'), **recent_data)
 
 
 # AI Chat feature
 @app.route('/chat')
 @login_required
 def chat():
-    return render_template('chat.html', user_name=session['user_name'])
+    return render_template('chat.html', user_name=session.get('user_name', 'Guest'))
 
 @app.route('/api/chat', methods=['POST'])
 @login_required
@@ -201,11 +211,12 @@ def api_chat():
     response = generate_ai_response(message, session.get('user_language', 'en'))
 
     # Save to database
-    conn = get_db()
-    conn.execute('INSERT INTO chat_history (user_id, message, response) VALUES (?, ?, ?)',
-                 (session['user_id'], message, response))
-    conn.commit()
-    conn.close()
+    if 'user_id' in session:
+        conn = get_db()
+        conn.execute('INSERT INTO chat_history (user_id, message, response) VALUES (?, ?, ?)',
+                     (session['user_id'], message, response))
+        conn.commit()
+        conn.close()
 
     return jsonify({'response': response})
 
@@ -261,7 +272,7 @@ def generate_ai_response(message, language='en'):
 @login_required
 def weather():
     return render_template('weather.html',
-                           user_name=session['user_name'],
+                           user_name=session.get('user_name', 'Guest'),
                            user_location=session.get('user_location', 'Delhi'))
 
 @app.route('/api/weather', methods=['POST'])
@@ -283,12 +294,13 @@ def api_weather():
 
         # Log weather alerts for extreme conditions
         if 'rain' in description.lower() or temp > 40 or temp < 5:
-            conn = get_db()
-            alert_message = f"Weather Alert: {description}, Temp: {temp}°C in {location}"
-            conn.execute('INSERT INTO weather_alerts (user_id, location, message) VALUES (?, ?, ?)',
-                         (session['user_id'], location, alert_message))
-            conn.commit()
-            conn.close()
+            if 'user_id' in session:
+                conn = get_db()
+                alert_message = f"Weather Alert: {description}, Temp: {temp}°C in {location}"
+                conn.execute('INSERT INTO weather_alerts (user_id, location, message) VALUES (?, ?, ?)',
+                             (session['user_id'], location, alert_message))
+                conn.commit()
+                conn.close()
 
         return jsonify({
             'temperature': temp,
@@ -310,7 +322,7 @@ def api_weather():
 @app.route('/analyze')
 @login_required
 def analyze():
-    return render_template('analyze.html', user_name=session['user_name'])
+    return render_template('analyze.html', user_name=session.get('user_name', 'Guest'))
 
 @app.route('/api/analyze', methods=['POST'])
 @login_required
@@ -337,12 +349,13 @@ def api_analyze():
     disease_name, confidence, treatment = mock_pest_analysis()
 
     # Save to database
-    conn = get_db()
-    conn.execute(
-        'INSERT INTO analysis_history (user_id, image_path, disease_name, confidence, treatment) VALUES (?, ?, ?, ?, ?)',
-        (session['user_id'], filepath, disease_name, confidence, treatment))
-    conn.commit()
-    conn.close()
+    if 'user_id' in session:
+        conn = get_db()
+        conn.execute(
+            'INSERT INTO analysis_history (user_id, image_path, disease_name, confidence, treatment) VALUES (?, ?, ?, ?, ?)',
+            (session['user_id'], filepath, disease_name, confidence, treatment))
+        conn.commit()
+        conn.close()
 
     return jsonify({
         'disease_name': disease_name,
@@ -372,7 +385,7 @@ def mock_pest_analysis():
 @login_required
 def soil():
     return render_template('soil.html',
-                           user_name=session['user_name'],
+                           user_name=session.get('user_name', 'Guest'),
                            user_location=session.get('user_location', ''))
 
 @app.route('/api/soil_analysis', methods=['POST'])
@@ -386,11 +399,12 @@ def api_soil_analysis():
     soil_data = get_soil_recommendations(crop_type, location)
 
     # Save to database
-    conn = get_db()
-    conn.execute('INSERT INTO soil_history (user_id, crop_type, location, recommendation) VALUES (?, ?, ?, ?)',
-                 (session['user_id'], crop_type, location, soil_data['recommendation']))
-    conn.commit()
-    conn.close()
+    if 'user_id' in session:
+        conn = get_db()
+        conn.execute('INSERT INTO soil_history (user_id, crop_type, location, recommendation) VALUES (?, ?, ?, ?)',
+                     (session['user_id'], crop_type, location, soil_data['recommendation']))
+        conn.commit()
+        conn.close()
 
     return jsonify(soil_data)
 
