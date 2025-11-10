@@ -1,0 +1,460 @@
+{% extends 'base.html' %}
+
+{% block title %}Weather - KisanBandhu{% endblock %}
+
+{% block extra_css %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+    * {
+        font-family: 'Poppins', 'Inter', sans-serif;
+    }
+
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+        overflow-x: hidden;
+    }
+
+    /* Weather Container */
+    .weather-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+    }
+
+    /* Header Section - Premium Gradient */
+    .weather-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 3rem;
+        border-radius: 24px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 50px rgba(102, 126, 234, 0.3);
+        margin-bottom: 2.5rem;
+    }
+
+    .weather-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+            radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+        animation: float 15s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-15px); }
+    }
+
+    .weather-header-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .weather-header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: white;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .weather-header p {
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.95);
+        font-weight: 500;
+    }
+
+    /* Search Section - Premium */
+    .search-section {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2.5rem;
+        border: 2px solid rgba(102, 126, 234, 0.1);
+    }
+
+    .search-form {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+    }
+
+    .location-input {
+        flex: 1;
+        padding: 1.3rem 1.8rem;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        border-radius: 50px;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        background: #f5f7fa;
+    }
+
+    .location-input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    .check-weather-btn {
+        padding: 1.3rem 3rem;
+        background: linear-gradient(135deg, #11998e, #38ef7d);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 10px 30px rgba(17, 153, 142, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .check-weather-btn:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 15px 40px rgba(17, 153, 142, 0.4);
+    }
+
+    /* Weather Results - Premium Card */
+    .weather-results {
+        background: white;
+        padding: 3rem;
+        border-radius: 24px;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2.5rem;
+        border: 2px solid rgba(102, 126, 234, 0.1);
+        display: none;
+    }
+
+    .weather-results.active {
+        display: block;
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .weather-main {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .weather-icon-large {
+        font-size: 6rem;
+        margin-bottom: 1rem;
+    }
+
+    .weather-temp {
+        font-size: 4.5rem;
+        font-weight: 900;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .weather-condition {
+        font-size: 1.5rem;
+        color: #7f8c8d;
+        font-weight: 600;
+    }
+
+    .weather-details-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+        margin-top: 2.5rem;
+    }
+
+    .weather-detail-item {
+        text-align: center;
+        padding: 1.5rem;
+        background: #f5f7fa;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .weather-detail-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    }
+
+    .weather-detail-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .weather-detail-value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+    }
+
+    .weather-detail-label {
+        font-size: 0.95rem;
+        color: #7f8c8d;
+        font-weight: 600;
+    }
+
+    /* SMS Alerts Section - Premium */
+    .sms-alerts-section {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        padding: 3.5rem;
+        border-radius: 24px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 50px rgba(240, 147, 251, 0.3);
+    }
+
+    .sms-alerts-section::before {
+        content: '📱';
+        position: absolute;
+        font-size: 18rem;
+        opacity: 0.08;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .sms-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .sms-alerts-section h2 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: white;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .sms-alerts-section p {
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.95);
+        margin-bottom: 2.5rem;
+        font-weight: 500;
+    }
+
+    .enable-sms-btn {
+        padding: 1.5rem 4rem;
+        background: white;
+        color: #f5576c;
+        border: none;
+        border-radius: 50px;
+        font-size: 1.3rem;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .enable-sms-btn:hover {
+        transform: translateY(-6px) scale(1.05);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .weather-header h1 {
+            font-size: 2rem;
+        }
+
+        .search-form {
+            flex-direction: column;
+        }
+
+        .check-weather-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .weather-details-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .weather-temp {
+            font-size: 3.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="weather-container">
+    <!-- Header -->
+    <div class="weather-header">
+        <div class="weather-header-content">
+            <h1>
+                <span>☁️</span>
+                Weather Alerts + SMS
+            </h1>
+            <p>Real-time weather forecasts with SMS alerts</p>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+        <form class="search-form" id="weatherForm">
+            <input
+                type="text"
+                class="location-input"
+                id="locationInput"
+                placeholder="Enter your city name (e.g., Gurdaspur)"
+                value="Gurdaspur"
+                required
+            />
+            <button type="submit" class="check-weather-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                </svg>
+                Check Weather
+            </button>
+        </form>
+    </div>
+
+    <!-- Weather Results -->
+    <div class="weather-results" id="weatherResults">
+        <div class="weather-main">
+            <div class="weather-icon-large" id="weatherIcon">🌤️</div>
+            <div class="weather-temp" id="temperature">--°C</div>
+            <div class="weather-condition" id="condition">--</div>
+        </div>
+
+        <div class="weather-details-grid">
+            <div class="weather-detail-item">
+                <div class="weather-detail-icon">💧</div>
+                <div class="weather-detail-value" id="humidity">--</div>
+                <div class="weather-detail-label">Humidity</div>
+            </div>
+
+            <div class="weather-detail-item">
+                <div class="weather-detail-icon">💨</div>
+                <div class="weather-detail-value" id="windSpeed">--</div>
+                <div class="weather-detail-label">Wind Speed</div>
+            </div>
+
+            <div class="weather-detail-item">
+                <div class="weather-detail-icon">🌡️</div>
+                <div class="weather-detail-value" id="feelsLike">--°C</div>
+                <div class="weather-detail-label">Feels Like</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SMS Alerts Section -->
+    <div class="sms-alerts-section">
+        <div class="sms-content">
+            <h2>
+                <span>📱</span>
+                Get SMS Weather Alerts
+            </h2>
+            <p>Receive critical weather updates directly on your phone - no internet needed!</p>
+            <button class="enable-sms-btn" onclick="enableSMS()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                Enable SMS Alerts
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const weatherForm = document.getElementById('weatherForm');
+    const weatherResults = document.getElementById('weatherResults');
+
+    weatherForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const location = document.getElementById('locationInput').value;
+
+        try {
+            const response = await fetch('/weather', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ location: location })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                displayWeather(data.weather);
+            } else {
+                alert('Could not fetch weather data. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Something went wrong. Please try again.');
+        }
+    });
+
+    function displayWeather(weather) {
+        // Update weather icon based on condition
+        const iconMap = {
+            'clear': '☀️',
+            'clouds': '☁️',
+            'rain': '🌧️',
+            'thunderstorm': '⛈️',
+            'snow': '❄️',
+            'mist': '🌫️',
+            'default': '🌤️'
+        };
+
+        const condition = weather.condition.toLowerCase();
+        let icon = iconMap.default;
+        for (let key in iconMap) {
+            if (condition.includes(key)) {
+                icon = iconMap[key];
+                break;
+            }
+        }
+
+        document.getElementById('weatherIcon').textContent = icon;
+        document.getElementById('temperature').textContent = weather.temp + '°C';
+        document.getElementById('condition').textContent = weather.condition;
+        document.getElementById('humidity').textContent = weather.humidity + '%';
+        document.getElementById('windSpeed').textContent = weather.wind + ' km/h';
+        document.getElementById('feelsLike').textContent = weather.feels_like + '°C';
+
+        weatherResults.classList.add('active');
+    }
+
+    function enableSMS() {
+        alert('SMS Alerts feature coming soon! You will receive weather updates on your registered phone number.');
+    }
+</script>
+{% endblock %}
